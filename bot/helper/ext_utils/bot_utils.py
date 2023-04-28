@@ -344,3 +344,34 @@ ZIP : {num_archi} | UNZIP : {num_extract} | TOTAL : {tasks}
 dispatcher.add_handler(
     CallbackQueryHandler(pop_up_stats, pattern="^" + str(FOUR) + "$")
 )
+
+
+def new_task(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return bot_loop.create_task(func(*args, **kwargs))
+    return wrapper
+    
+async def sync_to_async(func, *args, wait=True, **kwargs):
+    pfunc = partial(func, *args, **kwargs)
+    with ThreadPoolExecutor() as pool:
+        future = bot_loop.run_in_executor(pool, pfunc)
+        return await future if wait else future
+        
+async def cmd_exec(cmd, shell=False):
+    if shell:
+        proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE)
+    else:
+        proc = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = await proc.communicate()
+    stdout = stdout.decode().strip()
+    stderr = stderr.decode().strip()
+    return stdout, stderr, proc.returncode
+
+async def get_telegraph_list(telegraph_content):
+    path = [(await telegraph.create_page(title='Mirror-Leech-Bot Drive Search', content=content))["path"] for content in telegraph_content]
+    if len(path) > 1:
+        await telegraph.edit_telegraph(path, telegraph_content)
+    buttons = ButtonMaker()
+    buttons.ubutton("🔎 VIEW", f"https://telegra.ph/{path[0]}")
+    return buttons.build_menu(1)
