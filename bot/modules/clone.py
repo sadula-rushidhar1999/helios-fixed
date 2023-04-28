@@ -61,7 +61,7 @@ def _clone(message, bot):
     is_share = is_share_link(link)
     if is_share:
         try:
-            link = await sync_to_async(direct_link_generator, link)
+            link = sharer_scraper(link)
             LOGGER.info(f"Generated link: {link}")
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
