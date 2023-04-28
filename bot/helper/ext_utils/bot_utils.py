@@ -11,9 +11,9 @@ from bot import download_dict, download_dict_lock, STATUS_LIMIT, botStartTime, D
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
-MAGNET_REGEX = r"magnet:\?xt=urn:btih:[a-zA-Z0-9]*"
+MAGNET_REGEX = r'magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*'
 
-URL_REGEX = r"(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+"
+URL_REGEX = r'^(?!\/)(rtmps?:\/\/|mms:\/\/|rtsp:\/\/|https?:\/\/|ftp:\/\/)?([^\/:]+:[^\/@]+@)?(www\.)?(?=[^\/:\s]+\.[^\/:\s]+)([^\/:\s]+\.[^\/:\s]+)(:\d+)?(\/[^#\s]*[\s\S]*)?(\?[^#\s]*)?(#.*)?$'
 
 COUNT = 0
 PAGE_NO = 1
@@ -242,7 +242,7 @@ def get_readable_time(seconds: int) -> str:
     return result
 
 def is_url(url: str):
-    url = re_findall(URL_REGEX, url)
+    url = re_match(URL_REGEX, url)
     return bool(url)
 
 def is_gdrive_link(url: str):
@@ -261,14 +261,12 @@ def get_mega_link_type(url: str):
     return "file"
 
 def is_magnet(url: str):
-    magnet = re_findall(MAGNET_REGEX, url)
+    magnet = re_match(MAGNET_REGEX, url)
     return bool(magnet)
-def is_appdrive_link(url: str):
-    url = re_match(r'https?://(?:\S*\.)?(?:appdrive|driveapp)\.\S+', url)
-    return bool(url)
-def is_gdtot_link(url: str):
-    url = re_match(r'https?://.+\.gdtot\.\S+', url)
-    return bool(url)
+
+def is_share_link(url: str):
+    return bool(re_match(r'https?:\/\/.+\.gdtot\.\S+|https?:\/\/(filepress|filebee|appdrive|gdflix)\.\S+', url))
+
 def new_thread(fn):
     """To use as decorator to make a function call threaded.
     Needs import
