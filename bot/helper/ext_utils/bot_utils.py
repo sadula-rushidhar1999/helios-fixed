@@ -264,6 +264,10 @@ def is_magnet(url: str):
     magnet = re_match(MAGNET_REGEX, url)
     return bool(magnet)
 
+def is_gdtot_link(url: str):
+    url = re_match(r'https?://.+\.gdtot\.\S+', url)
+    return bool(url)
+
 def is_share_link(url: str):
     return bool(re_match(r'https?:\/\/.+\.gdtot\.\S+|https?:\/\/(filepress|filebee|appdrive|gdflix)\.\S+', url))
 
