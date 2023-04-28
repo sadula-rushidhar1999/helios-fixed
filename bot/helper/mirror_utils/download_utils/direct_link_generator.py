@@ -21,7 +21,7 @@ from time import sleep
 from lxml import etree
 from bot import LOGGER, UPTOBOX_TOKEN, APPDRIVE_EMAIL, APPDRIVE_PASS, CRYPT
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
-from bot.helper.ext_utils.bot_utils import is_appdrive_link, is_gdtot_link
+from bot.helper.ext_utils.bot_utils import is_appdrive_link, is_gdtot_link, is_filepress_link, is_unified_link
 fmed_list = ['fembed.net', 'fembed.com', 'femax20.com', 'fcdn.stream', 'feurl.com', 'layarkacaxxi.icu',
              'naniplay.nanime.in', 'naniplay.nanime.biz', 'naniplay.com', 'mm9842.com']
 
@@ -70,6 +70,10 @@ def direct_link_generator(link: str):
         return appdrive(link)
     elif is_gdtot_link(link):
         return gdtot(link)
+    elif is_filepress_link(link):
+        return filepress(link)
+    elif is_unified_link(link):
+        return unified(link)
     elif any(x in link for x in fmed_list):
         return fembed(link)
     elif any(x in link for x in ['sbembed.com', 'watchsb.com', 'streamsb.net', 'sbplay.org']):
@@ -456,22 +460,88 @@ def appdrive(url: str) -> str:
     else:
         raise DirectDownloadLinkException(f"{info_parsed['error_message']}")
 
-def gdtot(url: str) -> str:
-    """ Gdtot google drive link generator
-    By https://github.com/xcscxr """
-
-    if CRYPT is None:
-        raise DirectDownloadLinkException("ERROR: CRYPT cookie not provided")
-
-    match = re_findall(r'https?://(.+)\.gdtot\.(.+)\/\S+\/\S+', url)[0]
-
-    with rsession() as client:
-        client.cookies.update({'crypt': CRYPT})
-        client.get(url)
-        res = client.get(f"https://{match[0]}.gdtot.{match[1]}/dld?id={url.split('/')[-1]}")
-    matches = re_findall('gd=(.*?)&', res.text)
+def gdtot(url):
+    cget = create_scraper().request
     try:
-        decoded_id = b64decode(str(matches[0])).decode('utf-8')
-    except:
-        raise DirectDownloadLinkException("ERROR: Try in your broswer, mostly file not found or user limit exceeded!")
-    return f'https://drive.google.com/open?id={decoded_id}'
+        res = cget('GET', f'https://gdbot.xyz/file/{url.split("/")[-1]}')
+    except Exception as e:
+        raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}')
+    token_url = etree.HTML(res.content).xpath("//a[contains(@class,'inline-flex items-center justify-center')]/@href")
+    if not token_url:
+        try:
+            url = cget('GET', url).url
+            p_url = urlparse(url)
+            res = cget("GET",f"{p_url.scheme}://{p_url.hostname}/ddl/{url.split('/')[-1]}")
+        except Exception as e:
+            raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}')
+        if (drive_link := re_findall(r"myDl\('(.*?)'\)", res.text)) and "drive.google.com" in drive_link[0]:
+            return drive_link[0]
+        else:
+            raise DirectDownloadLinkException('ERROR: Drive Link not found, Try in your broswer')
+    token_url = token_url[0]
+    try:
+        token_page = cget('GET', token_url)
+    except Exception as e:
+        raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__} with {token_url}')
+    path = re_findall('\("(.*?)"\)', token_page.text)
+    if not path:
+        raise DirectDownloadLinkException('ERROR: Cannot bypass this')
+    path = path[0]
+    raw = urlparse(token_url)
+    final_url = f'{raw.scheme}://{raw.hostname}{path}'
+    return unified(final_url)
+  
+  def filepress(link: str) -> str:
+    cget = cloudscraper.create_scraper().request
+    try:
+        raw = urlparse(link)
+        json_data = {
+            'id': raw.path.split('/')[-1],
+            'method': 'publicDownlaod',
+            }
+        api = f'{raw.scheme}://{raw.hostname}/api/file/downlaod/'
+        res = cget('POST', api, headers={'Referer': f'{raw.scheme}://{raw.netloc}'}, json=json_data).json()
+        if 'data' not in res:
+            raise DirectDownloadLinkException(f'ERROR: {res["statusText"]}')
+        return f'https://drive.google.com/open?id={res["data"]}'
+    except Exception as e:
+        raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}')
+        
+def unified(link) -> str:
+    try:
+        cget = cloudscraper.create_scraper().request
+        url = cget('GET', link).url
+        raw = urlparse(url)
+        res = cget('GET', url)
+    except Exception as e:
+        raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}')
+    key = re_findall('"key",\s+"(.*?)"', res.text)
+    if not key:
+        raise DirectDownloadLinkException("ERROR: Key not found!")
+    key = key[0]
+    if not etree.HTML(res.content).xpath("//button[@id='drc']"):
+        raise DirectDownloadLinkException("ERROR: This link don't have direct download button")
+    headers = {
+        'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryi3pOrWU7hGYfwwL4',
+        'x-token': raw.hostname,
+    }
+    data = '------WebKitFormBoundaryi3pOrWU7hGYfwwL4\r\nContent-Disposition: form-data; name="action"\r\n\r\ndirect\r\n' \
+         f'------WebKitFormBoundaryi3pOrWU7hGYfwwL4\r\nContent-Disposition: form-data; name="key"\r\n\r\n{key}\r\n' \
+         '------WebKitFormBoundaryi3pOrWU7hGYfwwL4\r\nContent-Disposition: form-data; name="action_token"\r\n\r\n\r\n' \
+         '------WebKitFormBoundaryi3pOrWU7hGYfwwL4--\r\n'
+    try:
+        res = cget("POST", url, cookies=res.cookies, headers=headers, data=data).json()
+    except Exception as e:
+        raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}')
+    if "url" not in res:
+        raise DirectDownloadLinkException('ERROR: Drive Link not found')
+    if "drive.google.com" in res["url"]:
+        return res["url"]
+    try:
+        res = cget('GET', res["url"])
+    except Exception as e:
+        raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}')
+    if (drive_link := etree.HTML(res.content).xpath("//a[contains(@class,'btn')]/@href")) and "drive.google.com" in drive_link[0]:
+        return drive_link[0]
+    else:
+        raise DirectDownloadLinkException('ERROR: Drive Link not found')
