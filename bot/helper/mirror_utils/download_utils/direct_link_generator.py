@@ -33,54 +33,76 @@ anonfilesBaseSites = ['anonfiles.com', 'hotfile.io', 'bayfiles.com', 'megaupload
 
 def direct_link_generator(link: str):
     """ direct links generator """
-    if 'youtube.com' in link or 'youtu.be' in link:
-        raise DirectDownloadLinkException("ERROR: Use ytdl cmds for Youtube links")
-    elif 'yadi.sk' in link or 'disk.yandex.com' in link:
+    domain = urlparse(link).hostname
+    if not domain:
+        raise DirectDownloadLinkException("ERROR: Invalid URL")
+    if 'youtube.com' in domain or 'youtu.be' in domain:
+        raise DirectDownloadLinkException(
+            "ERROR: Use ytdl cmds for Youtube links")
+    elif 'yadi.sk' in domain or 'disk.yandex.com' in domain:
         return yandex_disk(link)
-    elif 'mediafire.com' in link:
+    elif 'mediafire.com' in domain:
         return mediafire(link)
-    elif 'uptobox.com' in link:
+    elif 'uptobox.com' in domain:
         return uptobox(link)
-    elif 'osdn.net' in link:
+    elif 'osdn.net' in domain:
         return osdn(link)
-    elif 'github.com' in link:
+    elif 'github.com' in domain:
         return github(link)
-    elif 'hxfile.co' in link:
+    elif 'hxfile.co' in domain:
         return hxfile(link)
     elif 'anonfiles.com' in link:
         return anonfiles(link)
-    elif 'letsupload.io' in link:
-        return letsupload(link)
-    elif '1drv.ms' in link:
+    elif '1drv.ms' in domain:
         return onedrive(link)
-    elif 'pixeldrain.com' in link:
+    elif 'pixeldrain.com' in domain:
         return pixeldrain(link)
-    elif 'antfiles.com' in link:
+    elif 'antfiles.com' in domain:
         return antfiles(link)
-    elif 'streamtape.com' in link:
+    elif 'streamtape.com' in domain:
         return streamtape(link)
     elif 'bayfiles.com' in link:
         return anonfiles(link)
-    elif 'racaty.net' in link:
+    elif 'racaty' in domain:
         return racaty(link)
-    elif '1fichier.com' in link:
+    elif '1fichier.com' in domain:
         return fichier(link)
-    elif 'solidfiles.com' in link:
+    elif 'solidfiles.com' in domain:
         return solidfiles(link)
-    elif 'krakenfiles.com' in link:
+    elif 'krakenfiles.com' in domain:
         return krakenfiles(link)
-    elif 'upload.ee' in link:
+    elif 'upload.ee' in domain:
         return uploadee(link)
-    elif is_appdrive_link((link)):
-        return appdrive(link)
-    elif is_gdtot_link(link):
-        return gdtot(link)
-    elif any(x in link for x in fmed_list):
+    elif 'akmfiles' in domain:
+        return akmfiles(link)
+    elif 'linkbox' in domain:
+        return linkbox(link)
+    elif 'shrdsk' in domain:
+        return shrdsk(link)
+    elif 'letsupload.io' in domain:
+        return letsupload(link)
+    elif any(x in domain for x in ['wetransfer.com', 'we.tl']):
+        return wetransfer(link)
+    elif any(x in domain for x in anonfilesBaseSites):
+        return anonfilesBased(link)
+    elif any(x in domain for x in ['terabox', 'nephobox', '4funbox', 'mirrobox', 'momerybox', 'teraboxapp']):
+        return terabox(link)
+    elif any(x in domain for x in fmed_list):
         return fembed(link)
-    elif any(x in link for x in ['sbembed.com', 'watchsb.com', 'streamsb.net', 'sbplay.org']):
+    elif any(x in domain for x in ['sbembed.com', 'watchsb.com', 'streamsb.net', 'sbplay.org']):
         return sbembed(link)
+    elif is_share_link(link):
+        if 'gdtot' in domain:
+            return gdtot(link)
+        elif 'filepress' in domain:
+            return filepress(link)
+        else:
+            return sharer_scraper(link)
+    elif 'zippyshare.com' in domain:
+        raise DirectDownloadLinkException('ERROR: R.I.P Zippyshare')
     else:
-        raise DirectDownloadLinkException(f'No Direct link function found for {link}')
+        raise DirectDownloadLinkException(
+            f'No Direct link function found for {link}')
 
 def yandex_disk(url: str) -> str:
     """ Yandex.Disk direct link generator
