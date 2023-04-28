@@ -11,7 +11,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
 from bot import bot, dispatcher, LOGGER, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, MIRROR_LOGS, BOT_PM, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_LIMIT, FORCE_BOT_PM
 from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_thread, is_share_link, get_readable_file_size, new_task, sync_to_async, cmd_exec, get_telegraph_list
-from bot.helper.mirror_utils.download_utils.direct_link_generator import sharer_scraper
+from bot.helper.mirror_utils.download_utils.direct_link_generator import sharer_scraper, filepress, gdtot
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.telegram_helper.button_build import ButtonMaker
 def _clone(message, bot):
@@ -62,6 +62,18 @@ def _clone(message, bot):
     if is_share:
         try:
             link = sharer_scraper(link)
+            LOGGER.info(f"Generated link: {link}")
+        except DirectDownloadLinkException as e:
+            deleteMessage(bot, msg)
+            return sendMessage(str(e), bot, message)
+        try:
+            link = gdtot(link)
+            LOGGER.info(f"Generated link: {link}")
+        except DirectDownloadLinkException as e:
+            deleteMessage(bot, msg)
+            return sendMessage(str(e), bot, message)
+        try:
+            link = filepress(link)
             LOGGER.info(f"Generated link: {link}")
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
