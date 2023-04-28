@@ -266,6 +266,9 @@ def is_magnet(url: str):
 def is_appdrive_link(url: str):
     url = re_match(r'https?://(?:\S*\.)?(?:appdrive|driveapp)\.\S+', url)
     return bool(url)
+def is_unified_link(url: str):
+    url = re_match(r'https?://(appdrive|driveapp|driveace|gdflix|driveroot|driveflix|indidrive|drivehub|drivelinks|drivebit|drivesharer|drivepro|driveseed|driveleech)\.\S+', url)
+    return bool(url)
 def is_gdtot_link(url: str):
     url = re_match(r'https?://.+\.gdtot\.\S+', url)
     return bool(url)
