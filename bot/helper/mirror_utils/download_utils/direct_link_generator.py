@@ -459,7 +459,7 @@ def appdrive(url: str) -> str:
         return link
     else:
         raise DirectDownloadLinkException(f"{info_parsed['error_message']}")
-
+  
 def gdtot(url):
     cget = create_scraper().request
     try:
@@ -491,7 +491,7 @@ def gdtot(url):
     final_url = f'{raw.scheme}://{raw.hostname}{path}'
     return unified(final_url)
   
-  def filepress(link: str) -> str:
+def filepress(link: str) -> str:
     cget = cloudscraper.create_scraper().request
     try:
         raw = urlparse(link)
