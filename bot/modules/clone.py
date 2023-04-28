@@ -10,8 +10,8 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
 from bot import bot, dispatcher, LOGGER, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, MIRROR_LOGS, BOT_PM, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_LIMIT, FORCE_BOT_PM
-from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_thread, is_share_link, get_readable_file_size, new_task, sync_to_async, cmd_exec, get_telegraph_list
-from bot.helper.mirror_utils.download_utils.direct_link_generator import sharer_scraper
+from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_thread,  is_gdtot_link, is_share_link, get_readable_file_size, new_task, sync_to_async, cmd_exec, get_telegraph_list
+from bot.helper.mirror_utils.download_utils.direct_link_generator import sharer_scraper, filepress, gdtot
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.telegram_helper.button_build import ButtonMaker
 def _clone(message, bot):
@@ -58,22 +58,26 @@ def _clone(message, bot):
             tag = f"@{reply_to.from_user.username}"
         else:
             tag = reply_to.from_user.mention_html(reply_to.from_user.first_name)
+    is_gdtot = is_gdtot_link(link)
+    is_filepress = is_filepress_link(link)
     is_share = is_share_link(link)
-    if is_share:
-        try:
-            link = sharer_scraper(link)
-            LOGGER.info(f"Generated link: {link}")
-        except DirectDownloadLinkException as e:
-            deleteMessage(bot, msg)
-            return sendMessage(str(e), bot, message)
+    if is_gdtot:
         try:
             link = gdtot(link)
             LOGGER.info(f"Generated link: {link}")
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
             return sendMessage(str(e), bot, message)
+    elif is_filepress:
         try:
             link = filepress(link)
+            LOGGER.info(f"Generated link: {link}")
+        except DirectDownloadLinkException as e:
+            deleteMessage(bot, msg)
+            return sendMessage(str(e), bot, message)
+    elif is_share:
+        try:
+            link = sharer_scraper(link)
             LOGGER.info(f"Generated link: {link}")
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
@@ -158,7 +162,10 @@ def _clone(message, bot):
             if FORCE_BOT_PM is False:
                 upldmsg = sendMarkup(result + cc, bot, message, button)
                 Thread(target=auto_delete_upload_message, args=(bot, message, upldmsg)).start()
-        if is_share:
+        if is_gdtot:
+            LOGGER.info(f"Deleting: {link}")
+            gd.deletefile(link)
+        elif is_share:
             LOGGER.info(f"Deleting: {link}")
             gd.deletefile(link)
         if MIRROR_LOGS:
