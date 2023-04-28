@@ -93,7 +93,7 @@ def direct_link_generator(link: str):
         return sbembed(link)
     elif is_share_link(link):
         if 'gdtot' in domain:
-            return gdtot(link)
+            return sharer_scraper(gdtot(link))
         elif 'filepress' in domain:
             return filepress(link)
         else:
@@ -579,7 +579,7 @@ def gdtot(url):
     path = path[0]
     raw = urlparse(token_url)
     final_url = f'{raw.scheme}://{raw.hostname}{path}'
-    return sharer_scraper(final_url)
+    return final_url
 
 
 def sharer_scraper(url):
