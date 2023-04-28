@@ -10,8 +10,8 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
 from bot import bot, dispatcher, LOGGER, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, MIRROR_LOGS, BOT_PM, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_LIMIT, FORCE_BOT_PM
-from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_thread, is_appdrive_link, is_gdtot_link, get_readable_file_size
-from bot.helper.mirror_utils.download_utils.direct_link_generator import appdrive, gdtot
+from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_thread, is_share_link, get_readable_file_size
+from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.telegram_helper.button_build import ButtonMaker
 def _clone(message, bot):
@@ -58,21 +58,11 @@ def _clone(message, bot):
             tag = f"@{reply_to.from_user.username}"
         else:
             tag = reply_to.from_user.mention_html(reply_to.from_user.first_name)
-    is_appdrive = is_appdrive_link(link)
-    is_gdtot = is_gdtot_link(link)
-    if is_appdrive:
-        msg = sendMessage(f"Processing: <code>{link}</code>", bot, message)
+    is_share = is_share_link(link)
+    if is_share:
         try:
-            link = appdrive(link)
-            deleteMessage(bot, msg)
-        except DirectDownloadLinkException as e:
-            deleteMessage(bot, msg)
-            return sendMessage(str(e), bot, message)
-    if is_gdtot:
-        try:
-            msg = sendMessage(f"Processing: <code>{link}</code>", bot, message)
-            link = gdtot(link)
-            deleteMessage(bot, msg)
+            link = await sync_to_async(direct_link_generator, link)
+            LOGGER.info(f"Generated link: {link}")
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
             return sendMessage(str(e), bot, message)
