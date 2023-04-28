@@ -269,6 +269,9 @@ def is_appdrive_link(url: str):
 def is_gdtot_link(url: str):
     url = re_match(r'https?://.+\.gdtot\.\S+', url)
     return bool(url)
+def is_filepress_link(url: str):
+    url = re_match(r'https?://(filepress|filebee)\.\S+', url)
+    return bool(url)
 def new_thread(fn):
     """To use as decorator to make a function call threaded.
     Needs import
