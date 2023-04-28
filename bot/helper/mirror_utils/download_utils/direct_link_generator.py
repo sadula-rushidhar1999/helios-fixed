@@ -91,13 +91,12 @@ def direct_link_generator(link: str):
         return fembed(link)
     elif any(x in domain for x in ['sbembed.com', 'watchsb.com', 'streamsb.net', 'sbplay.org']):
         return sbembed(link)
+    elif 'gdtot' in domain:
+        return sharer_scraper(gdtot(link))
+    elif 'filepress' in domain:
+        return filepress(link)
     elif is_share_link(link):
-        if 'gdtot' in domain:
-            return sharer_scraper(gdtot(link))
-        elif 'filepress' in domain:
-            return filepress(link)
-        else:
-            return sharer_scraper(link)
+      return sharer_scraper(link)
     elif 'zippyshare.com' in domain:
         raise DirectDownloadLinkException('ERROR: R.I.P Zippyshare')
     else:
@@ -579,7 +578,7 @@ def gdtot(url):
     path = path[0]
     raw = urlparse(token_url)
     final_url = f'{raw.scheme}://{raw.hostname}{path}'
-    return final_url
+    return sharer_scraper(final_url)
 
 
 def sharer_scraper(url):
