@@ -146,12 +146,6 @@ def _clone(message, bot):
             if FORCE_BOT_PM is False:
                 upldmsg = sendMarkup(result + cc, bot, message, button)
                 Thread(target=auto_delete_upload_message, args=(bot, message, upldmsg)).start()
-        if is_gdtot:
-            LOGGER.info(f"Deleting: {link}")
-            gd.deletefile(link)
-        elif is_appdrive:
-            LOGGER.info(f"Deleting: {link}")
-            gd.deletefile(link)
         if MIRROR_LOGS:
             try:
                 for chatid in MIRROR_LOGS:
